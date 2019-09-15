@@ -1,0 +1,27 @@
+{ "name": "indentation-stats-pmb",
+  "version": "1.0.0",
+  "description": "Survey spaces.",
+  "keywords": [
+    "space",
+    "spaces",
+    "tab",
+    "tabs",
+    "indentation"
+  ],
+
+  "author": "M.K. (https://github.com/mk-pmb)",
+  "homepage": "https://github.com/mk-pmb/indentation-stats-pmb-bash/#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mk-pmb/indentation-stats-pmb-bash.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mk-pmb/indentation-stats-pmb-bash/issues"
+  },
+  "contributors": [],
+
+  "private": true, "license": "ISC",
+
+
+  "npm vs. BOM = Unexpected token": "-*- coding: UTF-8 -*-"
+}
