@@ -1,32 +1,33 @@
 $ indentation-stats-pmb --git --totals=only,worded
-5 lines in 1 files are indented with tabs only.
-238 lines in 4 files are indented with spaces only.
-2 lines in 1 files have mixed indentation.
-0 lines in 0 files have very exotic indentation.
-0 lines in 0 files have trailing whitespace.
+5 lines in 4 files are indented with tabs only.
+279 lines in 4 files are indented with spaces only.
+2 lines in 4 files have mixed indentation.
+0 lines in 4 files have very exotic indentation.
+2..4 spaces are the range of shortest space indentation per file.
+0 lines in 4 files have trailing whitespace.
 1 files use multiple styles of indentation.
 0 files were ignored because grep considered them as binary files.
 
 $ indentation-stats-pmb --git --totals=only
-# tabs	spaces	mixed	exotic	trail	hints	unit	notes
-5	238	2	0	0	*	lines
-1	4	1	0	0	*	files	1 multi-style, 0 binary
+# tabs	spaces	mixed	exotic	min_sp	trail	hints	unit	notes
+5	279	2	0	2..4	0	*	lines
+4	4	4	4	2..4	4	*	files	1 multi-style, 0 binary
 
 $ indentation-stats-pmb --git
-# tabs	spaces	mixed	exotic	trail	hints	filename
-0	18	0	0	0	-	docs/examples/usage-demo.upd.sh
-0	197	0	0	0	-	ista.sh
-0	21	0	0	0	-	package.json
-5	2	2	0	0	m	test/examples/8tab_4sp.sh
-# tabs	spaces	mixed	exotic	trail	hints	unit	notes
-5	238	2	0	0	*	lines
-1	4	1	0	0	*	files	1 multi-style, 0 binary
+# tabs	spaces	mixed	exotic	min_sp	trail	hints	filename
+0	18	0	0	2	0	-	docs/examples/usage-demo.upd.sh
+0	238	0	0	2	0	-	ista.sh
+0	21	0	0	2	0	-	package.json
+5	2	2	0	4	0	m	test/examples/8tab_4sp.sh
+# tabs	spaces	mixed	exotic	min_sp	trail	hints	unit	notes
+5	279	2	0	2..4	0	*	lines
+4	4	4	4	2..4	4	*	files	1 multi-style, 0 binary
 
 $ indentation-stats-pmb --git --totals=no
-# tabs	spaces	mixed	exotic	trail	hints	filename
-0	18	0	0	0	-	docs/examples/usage-demo.upd.sh
-0	197	0	0	0	-	ista.sh
-0	21	0	0	0	-	package.json
-5	2	2	0	0	m	test/examples/8tab_4sp.sh
+# tabs	spaces	mixed	exotic	min_sp	trail	hints	filename
+0	18	0	0	2	0	-	docs/examples/usage-demo.upd.sh
+0	238	0	0	2	0	-	ista.sh
+0	21	0	0	2	0	-	package.json
+5	2	2	0	4	0	m	test/examples/8tab_4sp.sh
 
 # -*- coding: utf-8, tab-width: 8 -*-

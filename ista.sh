@@ -51,6 +51,12 @@ function indentation_stats () {
     worded=have very exotic indentation.
     rgx=^\s*([\v\x08\x7F])
     '
+  def_col min_sp '
+    rgx=^ +
+    rgx_metric=min_len_per_file
+    aggregator=nonzero_range
+    worded=spaces are the range of shortest space indentation per file.
+    '
   def_col trail '
     worded=have trailing whitespace.
     rgx=\r{2,}$|[ \t\v]\r?$
@@ -105,6 +111,8 @@ function def_col () {
   COLS[names]+=" $NAME"
   STATS["$NAME":lines]=0
   STATS["$NAME":files]=0
+  COLS["$NAME":aggregator]='lnflag_sum'
+  COLS["$NAME":rgx_metric]='lncnt'
   def_meta COLS "$NAME" "$@"
 }
 
@@ -174,7 +182,10 @@ function cfg_flag_isset () {
 function scan_one_file () {
   local -A FILE=( [name]="$1" [hints]= )
   each_col "$FUNCNAME"__col || return $?
-  [ -z "${FILE[binary]}" ] || return 0
+  if [ -n "${FILE[binary]}" ]; then
+    let STATS[binary:files]+=1
+    return 0
+  fi
 
   local STYLES=0 KEY=
   for KEY in tabs spaces mixed exotic; do
@@ -196,7 +207,47 @@ function scan_one_file () {
 
 
 function scan_one_file__col () {
-  local GREP_OUT= GREP_RV= GREP_LN_CNT=0
+  [ -n "${FILE[binary]}" ] && return 0
+  COL[val]=
+  scan_one_file__col_rgx || return $?
+  [ -n "${COL[val]}" ] || return 8$(echo "E: no value detected for column "$(
+    )"'${COL[name]}', file '${FILE[name]}'" >&2)
+  cfg_flag_isset totals only || tabcells "${COL[val]}"
+  FILE["${COL[name]}"]="${COL[val]}"
+  col_aggregate_"${COL[aggregator]}" || return $?
+}
+
+
+function col_aggregate_lnflag_sum () {
+  let STATS["${COL[name]}:files"]+=1 || true
+  let STATS["${COL[name]}:lines"]+="${COL[val]}" || true
+}
+
+
+function stats_set_if_empty_or () {
+  local KEY="$1"; shift
+  local OPER="$1"; shift
+  local VAL="$1"; shift
+  local OLD="${STATS[$KEY]}"
+  if [ -z "$OLD" ] || [ "$OLD" $OPER "$VAL" ]; then STATS[$KEY]="$VAL"; fi
+}
+
+
+function col_aggregate_nonzero_range () {
+  local CN="${COL[name]}" VAL="${COL[val]}"
+  if [ "$VAL" != 0 ]; then
+    stats_set_if_empty_or "$CN":range_min -gt "$VAL"
+    stats_set_if_empty_or "$CN":range_max -lt "$VAL"
+  fi
+  VAL="${STATS[$CN:range_min]}..${STATS[$CN:range_max]}"
+  STATS["$CN:files"]="$VAL"
+  STATS["$CN:lines"]="$VAL"
+}
+
+
+function scan_one_file__col_rgx () {
+  [ -n "${COL[rgx]}" ] || return 0
+  local GREP_OUT= GREP_RV=
   # Assign GREP_OUT in extra statement to capture the return value
   # of grep, not "local".
   # Use grep -n to ensure the last printed line won't be empty and thus
@@ -208,19 +259,28 @@ function scan_one_file__col () {
     0:'Binary file '*' matches' )
       FILE[binary]='yes'
       FILE[hints]+='b'
-      let STATS[binary:files]+=1
+      COL[val]=0
       return 0;;
     0:* )
-      GREP_LN_CNT="${GREP_OUT//[^$'\n']/}:"
-      GREP_LN_CNT="${#GREP_LN_CNT}"
-      let STATS["${COL[name]}:files"]+=1
-      ;;
-    1:* ) ;;
-    * ) echo "E: grep error in $FILE"; return "$GREP_RV";;
+      local RXMT="${COL[rgx_metric]}"
+      col_metric_rgx_"$RXMT" || return $?;;
+    1:* ) COL[val]=0;;
+    * ) echo "E: grep error in ${FILE[name]}"; return "$GREP_RV";;
   esac
-  cfg_flag_isset totals only || tabcells "$GREP_LN_CNT"
-  FILE["${COL[name]}"]="$GREP_LN_CNT"
-  let STATS["${COL[name]}:lines"]+="$GREP_LN_CNT" || true
+}
+
+
+function col_metric_rgx_lncnt () {
+  COL[val]="${GREP_OUT//[^$'\n']/}:"
+  COL[val]="${#COL[val]}"
+}
+
+
+function col_metric_rgx_min_len_per_file () {
+  COL[val]="$(<<<"$GREP_OUT" sed -re '
+    s~^[0-9]+:~~
+    s~.~1~g
+    ' | sort --numeric-sort --unique | head --lines=1 | wc --max-line-length)"
 }
 
 
@@ -261,10 +321,23 @@ function print_summary () {
 
 
 function print_summary__worded () {
+  local WORDED="${COL[worded]}"
+  [ -n "$WORDED" ] || WORDED="(no description for '${COL[name]}')"
+  "${FUNCNAME}_${COL[aggregator]}" || return $?
+}
+
+
+function print_summary__worded_lnflag_sum () {
   summary_stat_fact lines sp+arg1
   echo -n ' in '
   summary_stat_fact files sp+arg1
-  echo " ${COL[worded]:-(no description for '${COL[name]}')}"
+  echo " $WORDED"
+}
+
+
+function print_summary__worded_nonzero_range () {
+  local CN="${COL[name]}"
+  echo "${STATS[$CN:range_min]}..${STATS[$CN:range_max]} $WORDED"
 }
 
 
